@@ -1,0 +1,310 @@
+# Plex Unwrapped
+
+Year-in-review statistics for Plex users. Generates personalized viewing stats from Tautulli history and distributes via email with unique access links.
+
+## Features
+
+### Stats Generation
+- Total watch time, plays, movies, and TV episodes
+- Viewing patterns: most active month/day/hour, longest streaks
+- Top content: movies, shows, episodes, genres, actors, directors
+- Device and platform statistics
+- Quality metrics (direct play/transcode/direct stream)
+- Monthly breakdowns
+- Binge tracking and memorable days
+- Fun facts and achievement badges
+- Optional Overseerr integration (request stats)
+
+### Admin Panel
+- User management and Tautulli sync
+- Stats generation with preview mode
+- Individual and batch email sending
+- Email and application log viewer
+- Generation history tracking
+- Test mode (generate without sending)
+
+### Email Distribution
+- React Email templates with Plex branding
+- Unique tokenized URLs per user (90-day expiration)
+- SMTP support with rate limiting
+- Delivery status tracking
+
+### Frontend
+- Public wrapped stats viewer
+- Animated statistics presentation
+- Responsive design
+- No authentication required for viewing (tokenized access)
+
+## Requirements
+
+- Docker and Docker Compose
+- Tautulli with API access
+- SMTP server (Gmail/Google Workspace supported)
+- PostgreSQL 16+ (included in compose)
+- Redis 7+ (included in compose)
+
+## Installation
+
+### 1. Clone and Configure
+
+```bash
+git clone <repository-url>
+cd plex-unwrapped
+cp .env.example .env
+```
+
+### 2. Configure Environment
+
+Edit `.env` and set required values:
+
+**Required:**
+- `POSTGRES_PASSWORD`: Database password
+- `TAUTULLI_URL`: Your Tautulli server URL
+- `TAUTULLI_API_KEY`: Tautulli API key (Settings > Web Interface > API)
+- `SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD`: Email configuration
+- `ADMIN_USERNAME`, `ADMIN_PASSWORD`: Admin credentials
+- `JWT_SECRET`: Random string (generate with `openssl rand -base64 32`)
+
+**Recommended:**
+- `APP_URL`: Public URL where users access wrapped stats
+- `TARGET_YEAR`: Year to generate stats for (default: 2025)
+- `TEST_MODE=true`: For first run (generates stats without sending emails)
+
+### 3. Start Services
+
+```bash
+docker compose up -d
+```
+
+Containers:
+- `plex-unwrapped-frontend`: Port 3222 (default)
+- `plex-unwrapped-backend`: Port 3221 (default)
+- `plex-unwrapped-db`: PostgreSQL (internal)
+- `plex-unwrapped-redis`: Redis (internal)
+
+### 4. Access Admin Panel
+
+Navigate to `http://localhost:3222/admin` and log in with credentials from `.env`.
+
+## Usage
+
+### First Run
+
+1. **Sync Users**: Admin > Users > "Sync from Tautulli"
+2. **Generate Stats**: Admin > Generations > Select year > "Generate Wrapped"
+   - Use test mode first to verify data
+3. **Preview**: Admin > Users > "Preview" button for any user
+4. **Send Emails**:
+   - Individual: Users page > "Send Email"
+   - Batch: Emails page > Select generation > "Send Emails"
+
+### Annual Workflow
+
+1. Wait until after year ends (e.g., early January for previous year)
+2. Set `TARGET_YEAR` in `.env` to previous year
+3. Restart backend: `docker compose restart backend`
+4. Sync users and generate stats
+5. Preview a few users to verify data
+6. Disable test mode if enabled
+7. Send emails to all users
+
+## Configuration
+
+### SMTP Setup (Gmail/Google Workspace)
+
+1. Enable 2-Step Verification in Google Account
+2. Generate App Password: https://myaccount.google.com/apppasswords
+3. Configure `.env`:
+   ```
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_SECURE=false
+   SMTP_USER=your-email@example.com
+   SMTP_PASSWORD=<16-char-app-password>
+   ```
+
+### Overseerr Integration (Optional)
+
+Adds request statistics to user profiles (minimal impact if disabled).
+
+```bash
+ENABLE_OVERSEERR=true
+OVERSEERR_URL=http://your-overseerr:5055
+OVERSEERR_API_KEY=<api-key>
+```
+
+Note: Overseerr data is only used for badges/fun facts, not displayed in main stats.
+
+### Performance Tuning
+
+```bash
+MAX_WORKERS=4              # Concurrent stat generation
+TAUTULLI_PAGE_SIZE=1000    # Records per API call
+DB_POOL_MAX=10             # Max database connections
+CACHE_TTL_SECONDS=3600     # Stats cache duration
+```
+
+### Security
+
+```bash
+RATE_LIMIT_PUBLIC=10000    # Requests/hour for public endpoints
+RATE_LIMIT_ADMIN=10000     # Requests/hour for admin
+TOKEN_EXPIRATION_DAYS=90   # Wrapped URL validity
+```
+
+## Architecture
+
+```
+Frontend (Next.js 14)
+├── Public viewer (/wrapped/[token])
+└── Admin panel (/admin/*)
+    ├── Dashboard
+    ├── Users
+    ├── Generations
+    ├── Emails
+    └── Logs
+
+Backend (Node.js/Express)
+├── Tautulli API integration
+├── Overseerr API integration (optional)
+├── Stats calculator
+├── Email service
+└── Admin API
+
+Database (PostgreSQL)
+├── users
+├── user_wrapped_stats
+├── wrapped_generations
+├── email_logs
+└── access_tokens
+
+Cache (Redis)
+└── Tautulli/Overseerr API responses
+```
+
+## API Endpoints
+
+### Public
+- `GET /api/wrapped/:token` - Get wrapped stats
+- `POST /api/wrapped/:token/view` - Track view
+
+### Admin (requires JWT)
+- `POST /api/admin/login` - Authenticate
+- `GET /api/admin/dashboard` - Overview stats
+- `POST /api/admin/users/sync` - Sync from Tautulli
+- `GET /api/admin/users` - List users
+- `POST /api/admin/generate` - Generate stats
+- `GET /api/admin/generations` - List generations
+- `POST /api/admin/emails/send` - Send emails
+- `GET /api/admin/logs/email` - Email logs
+- `GET /api/admin/logs/application` - App logs
+- `POST /api/admin/users/:id/send-email` - Send to single user
+
+## Logs
+
+Application logs are stored in `/app/logs` inside the backend container.
+
+View logs:
+```bash
+# Application logs
+docker compose logs backend -f
+
+# Email logs
+docker compose logs backend | grep -i email
+
+# Access via admin panel
+http://localhost:3222/admin/logs
+```
+
+Log files:
+- `combined-YYYY-MM-DD.log`: All logs
+- `error-YYYY-MM-DD.log`: Error logs only
+- `exceptions.log`: Uncaught exceptions
+
+## Troubleshooting
+
+### Stats generation fails
+- Check Tautulli API key is valid
+- Verify `TARGET_YEAR` matches data availability
+- Check logs: `docker compose logs backend`
+
+### Emails not sending
+- Verify SMTP credentials
+- Test SMTP manually: `docker compose logs backend | grep -i smtp`
+- Check email logs in admin panel
+- Ensure firewall allows outbound SMTP
+
+### Users not syncing
+- Verify Tautulli URL is accessible from container
+- Check Tautulli API key permissions
+- View sync errors in admin panel
+
+### Database issues
+```bash
+# Reset database
+docker compose down -v
+docker compose up -d
+```
+
+### Performance issues
+- Increase `MAX_WORKERS` for faster generation
+- Reduce `TAUTULLI_PAGE_SIZE` if timeouts occur
+- Check Redis cache hit rate in logs
+
+## Development
+
+### Local Setup
+
+```bash
+# Backend
+cd backend
+npm install
+npm run dev
+
+# Frontend
+cd frontend
+npm install
+npm run dev
+```
+
+### Database Migrations
+
+```sql
+-- Initial schema in backend/database/init.sql
+-- Applied automatically on first container start
+```
+
+### Email Template Preview
+
+```bash
+cd frontend
+npm run email
+# Opens preview server on http://localhost:3001
+```
+
+## Environment Variables Reference
+
+See `.env.example` for all available options.
+
+Critical variables:
+- `POSTGRES_PASSWORD`: Database password
+- `TAUTULLI_URL`, `TAUTULLI_API_KEY`: Tautulli connection
+- `SMTP_*`: Email configuration
+- `ADMIN_USERNAME`, `ADMIN_PASSWORD`: Admin access
+- `JWT_SECRET`: Session security
+- `APP_URL`: Public facing URL for wrapped links
+
+## Tech Stack
+
+- Next.js 14 (App Router)
+- Express.js + TypeScript
+- PostgreSQL 16
+- Redis 7
+- React Email
+- shadcn/ui
+- Tautulli API
+
+## License
+
+MIT
+# plex-unwrapped
