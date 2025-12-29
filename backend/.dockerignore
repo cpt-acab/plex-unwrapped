@@ -1,0 +1,39 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+yarn.lock
+
+# Build output
+dist
+build
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Tests
+tests
+coverage
+*.test.ts
+*.spec.ts
+
+# Development files
+.git
+.gitignore
+README.md
+.vscode
+.idea
+*.log
+
+# Documentation
+docs
+
+# Temporary files
+tmp
+temp
+*.tmp
+*.swp
+*.swo
