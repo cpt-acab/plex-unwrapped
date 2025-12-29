@@ -2,6 +2,17 @@
 
 Year-in-review statistics for Plex users. Generates personalized viewing stats from Tautulli history and distributes via email with unique access links.
 
+## Screenshots
+
+### User Wrapped Stats
+![Stats Overview](https://i.imgur.com/yeHT8I0.jpeg)
+![Top Content](https://i.imgur.com/8YsYosb.jpeg)
+![Viewing Patterns](https://i.imgur.com/uigT7Qy.png)
+![Fun Facts](https://i.imgur.com/dmmlkoy.png)
+
+### Admin Panel
+![Admin Dashboard](https://i.imgur.com/fSOg29m.png)
+
 ## Features
 
 ### Stats Generation
