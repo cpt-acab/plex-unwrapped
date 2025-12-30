@@ -319,9 +319,6 @@ export default function WrappedPage() {
       `}</style>
 
       <div className="bg-[#0a0a0a] snap-y snap-mandatory h-screen overflow-y-scroll">
-        {/* Language Switcher */}
-        <LanguageSwitcher />
-
         {/* Slide 1: Welcome */}
         <section className="snap-start min-h-screen flex items-center justify-center relative overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,#ff6b35_0%,transparent_70%)] opacity-10" />
@@ -358,6 +355,16 @@ export default function WrappedPage() {
             >
               {t('welcome.subtitle')}
             </motion.p>
+
+            {/* Language Switcher - Integrated */}
+            <motion.div
+              className="mt-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1 }}
+            >
+              <LanguageSwitcher />
+            </motion.div>
 
             <motion.div
               className="mt-12"

@@ -34,7 +34,7 @@ export default function LanguageSwitcher() {
   };
 
   return (
-    <div className="fixed top-6 right-6 z-50">
+    <div className="inline-block">
       <div className="relative">
         <button
           onClick={() => setIsOpen(!isOpen)}

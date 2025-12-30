@@ -536,10 +536,11 @@ async function sendEmails(statsList: any[], generationId: number) {
         continue;
       }
 
-      const wrappedUrl = `${process.env.APP_URL}/wrapped/${tokenRecord.token}`;
+      // Get user's preferred language (defaults to 'en' if not set)
+      const locale = user.preferred_language || 'en';
 
-      // Get user's preferred language (default to 'en' for now)
-      const locale = 'en'; // TODO: Get from user preferences once database is updated
+      // Build wrapped URL with language parameter
+      const wrappedUrl = `${process.env.APP_URL}/wrapped/${tokenRecord.token}?lang=${locale}`;
 
       // Generate subject with i18n
       const { i18n } = require('../services/i18n.service');
