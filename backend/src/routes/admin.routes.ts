@@ -538,21 +538,28 @@ async function sendEmails(statsList: any[], generationId: number) {
 
       const wrappedUrl = `${process.env.APP_URL}/wrapped/${tokenRecord.token}`;
 
+      // Get user's preferred language (default to 'en' for now)
+      const locale = 'en'; // TODO: Get from user preferences once database is updated
+
+      // Generate subject with i18n
+      const { i18n } = require('../services/i18n.service');
+      const emailSubject = i18n.t('email.subject', locale, { year: stats.year });
+
       // Create email log
       const emailLog = await EmailLogModel.create({
         user_id: user.id,
         generation_id: generationId,
         email_to: user.email,
-        email_subject: `Your Unwrapped for Plex ${stats.year} is Ready!`,
+        email_subject: emailSubject,
       });
 
       // Send email
       const info = await transporter.sendMail({
         from: `"${process.env.SMTP_FROM_NAME}" <${process.env.SMTP_FROM_EMAIL}>`,
         to: user.email,
-        subject: `Your Unwrapped for Plex ${stats.year} is Ready!`,
-        html: generateEmailHTML(user, stats, wrappedUrl),
-        text: generateEmailText(user, stats, wrappedUrl),
+        subject: emailSubject,
+        html: generateEmailHTML(user, stats, wrappedUrl, locale),
+        text: generateEmailText(user, stats, wrappedUrl, locale),
       });
 
       // Mark as sent
@@ -572,8 +579,13 @@ async function sendEmails(statsList: any[], generationId: number) {
 /**
  * Generate email HTML
  */
-function generateEmailHTML(user: any, stats: any, url: string): string {
+function generateEmailHTML(user: any, stats: any, url: string, locale: string = 'en'): string {
   const hours = Math.floor(stats.total_watch_time_minutes / 60);
+  const { i18n } = require('../services/i18n.service');
+  const t = (key: string, params?: any) => i18n.t(key, locale, params);
+
+  const name = user.friendly_name || user.username;
+
   return `
     <!DOCTYPE html>
     <html>
@@ -591,32 +603,32 @@ function generateEmailHTML(user: any, stats: any, url: string): string {
     <body>
       <div class="container">
         <div class="header">
-          <h1>🎬 Your Unwrapped for Plex ${stats.year}</h1>
-          <p>Hey ${user.friendly_name || user.username}!</p>
+          <h1>${t('email.title', { year: stats.year })}</h1>
+          <p>${t('email.greeting', { name })}</p>
         </div>
         <div class="content">
-          <p>Your personalized year in review is ready!</p>
+          <p>${t('email.intro')}</p>
 
           <div class="stats">
-            <h2>Quick Peek 👀</h2>
+            <h2>${t('email.quickPeek.title')}</h2>
             <ul>
-              <li><strong>${hours} hours</strong> of content watched</li>
-              <li><strong>${stats.total_plays} plays</strong> across movies and TV</li>
-              <li><strong>${stats.days_active} days</strong> of viewing activity</li>
+              <li><strong>${t('email.quickPeek.hoursWatched', { hours })}</strong></li>
+              <li><strong>${t('email.quickPeek.totalPlays', { plays: stats.total_plays })}</strong></li>
+              <li><strong>${t('email.quickPeek.daysActive', { days: stats.days_active })}</strong></li>
             </ul>
           </div>
 
-          <p>Click below to see your complete stats, top content, viewing patterns, and fun achievements!</p>
+          <p>${t('email.description')}</p>
 
           <center>
-            <a href="${url}" class="button">View My Wrapped ${stats.year}</a>
+            <a href="${url}" class="button">${t('email.button', { year: stats.year })}</a>
           </center>
 
-          <p style="color: #666; font-size: 14px;">This personalized link is unique to you and will expire in 90 days.</p>
+          <p style="color: #666; font-size: 14px;">${t('email.linkExpiry')}</p>
         </div>
         <div class="footer">
-          <p>🤖 Generated with Unwrapped for Plex</p>
-          <p>If you didn't request this, you can safely ignore this email.</p>
+          <p>${t('email.footer.generated')}</p>
+          <p>${t('email.footer.ignore')}</p>
         </div>
       </div>
     </body>
@@ -627,28 +639,33 @@ function generateEmailHTML(user: any, stats: any, url: string): string {
 /**
  * Generate email text (plain text fallback)
  */
-function generateEmailText(user: any, stats: any, url: string): string {
+function generateEmailText(user: any, stats: any, url: string, locale: string = 'en'): string {
   const hours = Math.floor(stats.total_watch_time_minutes / 60);
+  const { i18n } = require('../services/i18n.service');
+  const t = (key: string, params?: any) => i18n.t(key, locale, params);
+
+  const name = user.friendly_name || user.username;
+
   return `
-Your Unwrapped for Plex ${stats.year}
+${t('email.plainText.title', { year: stats.year })}
 
-Hey ${user.friendly_name || user.username}!
+${t('email.greeting', { name })}
 
-Your personalized year in review is ready!
+${t('email.intro')}
 
-Quick Peek:
-- ${hours} hours of content watched
-- ${stats.total_plays} plays across movies and TV
-- ${stats.days_active} days of viewing activity
+${t('email.plainText.quickPeek')}
+${t('email.plainText.hoursWatched', { hours })}
+${t('email.plainText.totalPlays', { plays: stats.total_plays })}
+${t('email.plainText.daysActive', { days: stats.days_active })}
 
-View your complete wrapped stats here:
+${t('email.plainText.viewHere')}
 ${url}
 
-This personalized link is unique to you and will expire in 90 days.
+${t('email.linkExpiry')}
 
----
-Generated with Unwrapped for Plex
-If you didn't request this, you can safely ignore this email.
+${t('email.plainText.separator')}
+${t('email.plainText.generated')}
+${t('email.footer.ignore')}
   `.trim();
 }
 
