@@ -137,7 +137,8 @@ services:
       LOG_TO_CONSOLE: ${LOG_TO_CONSOLE:-true}
 
       # Healthcheck
-       HEALTHCHECK_HOST: ${HEALTHCHECK_HOST:-localhost}
+      
+      HEALTHCHECK_HOST: ${HEALTHCHECK_HOST:-localhost}
        
     volumes:
       - backend_logs:/app/logs
