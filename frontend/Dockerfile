@@ -61,8 +61,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # RUN apk add --no-cache dumb-init
 
 # Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001
+# RUN addgroup -g 1001 -S nodejs && \
+#    adduser -S nextjs -u 1001
 
 # Copy necessary files from builder
 COPY --from=builder /app/next.config.js ./
