@@ -7,7 +7,7 @@ FROM node:20 AS builder
 WORKDIR /app
 
 # Install dependencies for building
-RUN apk add --no-cache python3 make g++
+# RUN apk add --no-cache python3 make g++
 
 # Copy package files
 COPY package*.json ./
@@ -32,7 +32,7 @@ FROM node:20 AS runner
 ENV NODE_ENV=production
 
 # Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# RUN apk add --no-cache dumb-init
 
 # Create app directory
 WORKDIR /app
