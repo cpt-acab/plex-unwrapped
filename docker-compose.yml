@@ -124,8 +124,6 @@ services:
       LOG_FILE_PATH: ${LOG_FILE_PATH:-/app/logs}
       LOG_TO_CONSOLE: ${LOG_TO_CONSOLE:-true}
 
-      HEALTHCHECK_HOST: ${HEALTHCHECK_HOST:-192.168.0.25}
-
     volumes:
       - backend_logs:/app/logs
     depends_on:
@@ -137,11 +135,11 @@ services:
       - unwrapped-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"require('http').get('http://' + (process.env.HEALTHCHECK_HOST || 'localhost') + ':3001/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1))\""]
+      test: ["CMD-SHELL", "curl -f http://localhost:3001/api/health || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 120s
+      retries: 5
+      start_period: 30s
     logging:
       driver: "json-file"
       options:
@@ -165,10 +163,9 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       BACKEND_API_URL: http://backend:3001
       NEXT_PUBLIC_APP_URL: ${APP_URL:-http://localhost:3222}
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-3221}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3221}
       NEXT_PUBLIC_PLEX_URL: ${NEXT_PUBLIC_PLEX_URL:-}
       NEXT_PUBLIC_ENABLE_SHARE_IMAGES: ${ENABLE_SHARE_IMAGES:-true}
-      HEALTHCHECK_HOST: ${HEALTHCHECK_HOST:-192.168.0.25}
     depends_on:
       backend:
         condition: service_healthy
@@ -176,11 +173,11 @@ services:
       - unwrapped-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"require('http').get('http://' + (process.env.HEALTHCHECK_HOST || 'localhost') + ':3000/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1))\""]
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 120s
+      retries: 5
+      start_period: 30s
     logging:
       driver: "json-file"
       options:
