@@ -61,37 +61,31 @@ services:
     ports:
       - "${BACKEND_PORT:-3221}:3001"
     environment:
-      # Node
       NODE_ENV: ${NODE_ENV:-production}
 
-      # Database
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
       POSTGRES_DB: ${POSTGRES_DB:-plexunwrapped}
       POSTGRES_USER: ${POSTGRES_USER:-plexunwrapped}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
-      # Redis
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       REDIS_DB: ${REDIS_DB:-0}
 
-      # Tautulli
       TAUTULLI_URL: ${TAUTULLI_URL:?Please set TAUTULLI_URL in .env file}
       TAUTULLI_API_KEY: ${TAUTULLI_API_KEY:?Please set TAUTULLI_API_KEY in .env file}
       TAUTULLI_TIMEOUT: ${TAUTULLI_TIMEOUT:-30000}
       TAUTULLI_CACHE_TTL: ${TAUTULLI_CACHE_TTL:-3600}
       TAUTULLI_PAGE_SIZE: ${TAUTULLI_PAGE_SIZE:-1000}
 
-      # Overseerr
       OVERSEERR_URL: ${OVERSEERR_URL:-}
       OVERSEERR_API_KEY: ${OVERSEERR_API_KEY:-}
       OVERSEERR_TIMEOUT: ${OVERSEERR_TIMEOUT:-30000}
       OVERSEERR_CACHE_TTL: ${OVERSEERR_CACHE_TTL:-3600}
       ENABLE_OVERSEERR: ${ENABLE_OVERSEERR:-true}
 
-      # SMTP
       SMTP_HOST: ${SMTP_HOST:?Please set SMTP_HOST in .env file}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_SECURE: ${SMTP_SECURE:-false}
@@ -101,49 +95,39 @@ services:
       SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Unwrapped for Plex}
       EMAIL_RATE_LIMIT: ${EMAIL_RATE_LIMIT:-10}
 
-      # Application
       APP_URL: ${APP_URL:-http://localhost:3222}
       TARGET_YEAR: ${TARGET_YEAR:-2025}
 
-      # Admin
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Please set ADMIN_PASSWORD in .env file}
       JWT_SECRET: ${JWT_SECRET:?Please set JWT_SECRET in .env file}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
 
-      # Security
       TOKEN_LENGTH: ${TOKEN_LENGTH:-32}
       TOKEN_EXPIRATION_DAYS: ${TOKEN_EXPIRATION_DAYS:-90}
       RATE_LIMIT_PUBLIC: ${RATE_LIMIT_PUBLIC:-100}
       RATE_LIMIT_ADMIN: ${RATE_LIMIT_ADMIN:-1000}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3222}
 
-      # Features
       ENABLE_SHARE_IMAGES: ${ENABLE_SHARE_IMAGES:-true}
       ENABLE_PUBLIC_STATS: ${ENABLE_PUBLIC_STATS:-true}
       ENABLE_EMAIL_TRACKING: ${ENABLE_EMAIL_TRACKING:-false}
       DEBUG_MODE: ${DEBUG_MODE:-false}
       TEST_MODE: ${TEST_MODE:-false}
 
-      # Performance
       MAX_WORKERS: ${MAX_WORKERS:-4}
       CACHE_TTL_SECONDS: ${CACHE_TTL_SECONDS:-3600}
       DB_POOL_MIN: ${DB_POOL_MIN:-2}
       DB_POOL_MAX: ${DB_POOL_MAX:-10}
 
-      # Logging
       LOG_LEVEL: ${LOG_LEVEL:-info}
       LOG_FILE_PATH: ${LOG_FILE_PATH:-/app/logs}
       LOG_TO_CONSOLE: ${LOG_TO_CONSOLE:-true}
 
-      # Healthcheck
-      
-      HEALTHCHECK_HOST: ${HEALTHCHECK_HOST:-localhost}
-       
+      HEALTHCHECK_HOST: ${HEALTHCHECK_HOST:-192.168.0.25}
+
     volumes:
       - backend_logs:/app/logs
-      # Uncomment for development hot-reload
-      # - ./backend/src:/app/src:ro
     depends_on:
       db:
         condition: service_healthy
@@ -153,7 +137,7 @@ services:
       - unwrapped-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3001/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1))\""]
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://' + (process.env.HEALTHCHECK_HOST || 'localhost') + ':3001/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1))\""]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -165,8 +149,6 @@ services:
         max-file: "3"
 
   # Frontend (Next.js)
-  # Exposed directly on port 3000 for simple setup
-  # For production with SSL, use docker-compose.nginx.yml override
   frontend:
     build:
       context: ./frontend
@@ -183,59 +165,27 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       BACKEND_API_URL: http://backend:3001
       NEXT_PUBLIC_APP_URL: ${APP_URL:-http://localhost:3222}
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3221}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-3221}
       NEXT_PUBLIC_PLEX_URL: ${NEXT_PUBLIC_PLEX_URL:-}
       NEXT_PUBLIC_ENABLE_SHARE_IMAGES: ${ENABLE_SHARE_IMAGES:-true}
-      HEALTHCHECK_HOST: ${HEALTHCHECK_HOST:-localhost}
+      HEALTHCHECK_HOST: ${HEALTHCHECK_HOST:-192.168.0.25}
     depends_on:
       backend:
         condition: service_healthy
     networks:
       - unwrapped-network
     restart: unless-stopped
-    
-  healthcheck:
-    test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1))\""]
-    interval: 30s
-    timeout: 10s
-    retries: 3
-    start_period: 120s
-
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://' + (process.env.HEALTHCHECK_HOST || 'localhost') + ':3000/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
-
-  # Nginx Reverse Proxy (Optional)
-  # Uncomment to use nginx with SSL termination
-  # Run with: docker-compose -f docker-compose.yml -f docker-compose.nginx.yml up -d
-  # nginx:
-  #   image: nginx:alpine
-  #   container_name: unwrapped-for-plex-nginx
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #   volumes:
-  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-  #     - ./nginx/ssl:/etc/nginx/ssl:ro
-  #     - nginx_cache:/var/cache/nginx
-  #     - nginx_logs:/var/log/nginx
-  #   depends_on:
-  #     - frontend
-  #   networks:
-  #     - unwrapped-network
-  #   restart: unless-stopped
-  #   healthcheck:
-  #     test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/health" || "exit 1"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #   logging:
-  #     driver: "json-file"
-  #     options:
-  #       max-size: "10m"
-  #       max-file: "3"
 
 volumes:
   postgres_data:
@@ -244,15 +194,7 @@ volumes:
     driver: local
   backend_logs:
     driver: local
-  # Nginx volumes (only needed if using nginx)
-  # nginx_cache:
-  #   driver: local
-  # nginx_logs:
-  #   driver: local
 
 networks:
   unwrapped-network:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.26.0.0/16
+    driv
