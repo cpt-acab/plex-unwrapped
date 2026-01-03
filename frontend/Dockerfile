@@ -5,7 +5,7 @@ FROM FROM node:20 AS deps
 
 # Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine
 # to understand why libc6-compat might be needed
-RUN apk add --no-cache libc6-compat
+# RUN apk add --no-cache libc6-compat
 
 WORKDIR /app
 
@@ -49,7 +49,7 @@ RUN npm run build
 # =============================================================================
 # Production Stage
 # =============================================================================
-FROM node:20-alpine AS runner
+FROM node:20 AS runner
 
 WORKDIR /app
 
@@ -58,7 +58,7 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# RUN apk add --no-cache dumb-init
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
