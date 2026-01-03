@@ -1,3 +1,17 @@
+# Plex Unwrapped (Fork)
+
+This is a fork of [mihavidakovic/plex-unwrapped](https://github.com/mihavidakovic/plex-unwrapped).
+
+Changes in this fork (all made with heavy reliance on vibe-coding):
+
+- Updated backend and frontend Dockerfiles for Debian/Portainer compatibility.
+- Custom configuration for Unraid deployment.
+- Other minor fixes and environment adjustments.
+
+Original project is maintained by [mihavidakovic](https://github.com/mihavidakovic).
+
+This fork is distributed under the same MIT License as the original project.
+
 # Unwrapped for Plex
 
 Year-in-review statistics for Plex users. Generates personalized viewing stats from Tautulli history and distributes via email with unique access links.
