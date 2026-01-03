@@ -38,10 +38,10 @@ ENV NODE_ENV=production
 WORKDIR /app
 
 # Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001 && \
-    mkdir -p /app/logs && \
-    chown -R nodejs:nodejs /app
+# RUN addgroup -g 1001 -S nodejs && \
+#    adduser -S nodejs -u 1001 && \
+#    mkdir -p /app/logs && \
+#    chown -R nodejs:nodejs /app
 
 # Copy package files
 COPY --from=builder /app/package*.json ./
