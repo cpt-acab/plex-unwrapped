@@ -1,25 +1,25 @@
 # =============================================================================
 # Dependencies Stage
 # =============================================================================
-FROM FROM node:20 AS deps
-
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine
-# to understand why libc6-compat might be needed
-# RUN apk add --no-cache libc6-compat
+FROM node:20 AS deps
 
 WORKDIR /app
+
+# Install build tools for native modules
+RUN apt-get update && apt-get install -y \
+    python3 make g++ \
+ && rm -rf /var/lib/apt/lists/*
 
 # Copy package files
 COPY package*.json ./
 
-# Install ALL dependencies (including devDependencies for Next.js build)
-RUN npm ci && \
-    npm cache clean --force
+# Install all dependencies (including devDependencies for Next.js build)
+RUN npm install && npm cache clean --force
 
 # =============================================================================
 # Builder Stage
 # =============================================================================
-FROM node:20-alpine AS builder
+FROM node:20 AS builder
 
 WORKDIR /app
 
@@ -29,7 +29,7 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy all files
 COPY . .
 
-# Ensure public folder exists for COPY later
+# Ensure public folder exists
 RUN mkdir -p public
 
 # Build arguments
@@ -56,37 +56,29 @@ WORKDIR /app
 # Set environment
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
-# Install dumb-init for proper signal handling
-# RUN apk add --no-cache dumb-init
-
-# Create non-root user
-# RUN addgroup -g 1001 -S nodejs && \
-#    adduser -S nextjs -u 1001
+# Install dumb-init
+RUN apt-get update && apt-get install -y dumb-init \
+ && rm -rf /var/lib/apt/lists/*
 
 # Copy necessary files from builder
 COPY --from=builder /app/next.config.js ./
 COPY --from=builder /app/package.json ./package.json
 
 # Copy standalone output
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 
-# Copy public folder if it exists
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+# Copy public folder
+COPY --from=builder /app/public ./public
 
-# Copy translation files (required for next-intl)
-COPY --from=builder --chown=nextjs:nodejs /app/messages ./messages
-
-# Switch to non-root user
-USER nextjs
+# Copy translation files
+COPY --from=builder /app/messages ./messages
 
 # Expose port
 EXPOSE 3000
-
-# Environment variables
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
