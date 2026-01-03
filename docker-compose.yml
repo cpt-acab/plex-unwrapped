@@ -134,12 +134,12 @@ services:
     networks:
       - unwrapped-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3001/api/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
+    #healthcheck:
+    #  test: ["CMD-SHELL", "curl -f http://localhost:3001/api/health || exit 1"]
+    #  interval: 30s
+    #  timeout: 10s
+    #  retries: 5
+    #  start_period: 30s
     logging:
       driver: "json-file"
       options:
